@@ -81,8 +81,8 @@ if __name__ == '__main__':
 
 
     sample_rate_default = 16000
-    origin_wavpath_default = "./data/VCTK-Corpus/wav48".replace('/', sep)
-    target_wavpath_default = "./data/VCTK-Corpus/wav16".replace('/', sep)
+    origin_wavpath_default = "./data/raw/wav48".replace('/', sep)
+    target_wavpath_default = "./data/raw/wav16".replace('/', sep)
     mc_dir_train_default = './data/mc/train'.replace('/', sep)
     mc_dir_test_default = './data/mc/test'.replace('/', sep)
 
