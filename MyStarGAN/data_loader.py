@@ -5,21 +5,26 @@ import random
 import glob
 from os.path import join, basename, dirname, split
 import numpy as np
+from os import sep
 
-# Below is the accent info for the used 10 speakers.
-spk2acc = {'262': 'Edinburgh', #F
-           '272': 'Edinburgh', #M
-           '229': 'SouthEngland', #F 
-           '232': 'SouthEngland', #M
-           '292': 'NorthernIrishBelfast', #M 
-           '293': 'NorthernIrishBelfast', #F 
-           '360': 'AmericanNewJersey', #M
-           '361': 'AmericanNewJersey', #F
-           '248': 'India', #F
-           '251': 'India'} #M
+# # Below is the accent info for the used 10 speakers.
+# spk2acc = {'262': 'Edinburgh', #F
+#            '272': 'Edinburgh', #M
+#            '229': 'SouthEngland', #F 
+#            '232': 'SouthEngland', #M
+#            '292': 'NorthernIrishBelfast', #M 
+#            '293': 'NorthernIrishBelfast', #F 
+#            '360': 'AmericanNewJersey', #M
+#            '361': 'AmericanNewJersey', #F
+#            '248': 'India', #F
+#            '251': 'India'} #M
+# 这里我们不用这些。
+
 min_length = 256   # Since we slice 256 frames from each utterance when training.
 # Build a dict useful when we want to get one-hot representation of speakers.
-speakers = ['p262', 'p272', 'p229', 'p232', 'p292', 'p293', 'p360', 'p361', 'p248', 'p251']
+# speakers = ['p262', 'p272', 'p229', 'p232', 'p292', 'p293', 'p360', 'p361', 'p248', 'p251']
+# 这里我们改了。
+speakers = ['SF1', 'SM1']
 spk2idx = dict(zip(speakers, range(len(speakers))))
 
 def to_categorical(y, num_classes=None):
@@ -52,7 +57,7 @@ class MyDataset(data.Dataset):
     """Dataset for MCEP features and speaker labels."""
     def __init__(self, data_dir):
         mc_files = glob.glob(join(data_dir, '*.npy'))
-        mc_files = [i for i in mc_files if basename(i)[:4] in speakers] 
+        mc_files = [i for i in mc_files if basename(i)[:3] in speakers] # 注意这里！
         self.mc_files = self.rm_too_short_utt(mc_files)
         self.num_files = len(self.mc_files)
         print("\t Number of training samples: ", self.num_files)
@@ -134,7 +139,7 @@ def get_loader(data_dir, batch_size=32, mode='train', num_workers=1):
 
 
 if __name__ == '__main__':
-    loader = get_loader('./data/mc/train')
+    loader = get_loader('./data/mc/train'.replace('/', sep))
     data_iter = iter(loader)
     for i in range(10):
         mc, spk_idx, acc_idx, spk_acc_cat = next(data_iter)
@@ -146,10 +151,3 @@ if __name__ == '__main__':
         print(spk_idx.squeeze_())
         print(spk_acc_cat)
         print('-'*50)
-
-
-
-
-
-
-
