@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 import glob
 from os.path import join, basename
 from os import sep
+import soundfile as sf
 
 def resample(spk, origin_wavpath, target_wavpath):
     wavfiles = [i for i in os.listdir(join(origin_wavpath, spk)) if i.endswith(".wav")]
@@ -22,7 +23,11 @@ def resample(spk, origin_wavpath, target_wavpath):
         os.makedirs(folder_to, exist_ok=True)
         wav_to = join(folder_to, wav)
         wav_from = join(origin_wavpath, spk, wav)
-        subprocess.call(['sox', wav_from, "-r", "16000", wav_to])
+        # 这里修改成使用 librosa.resample；事实上原式音频也就不要求是 48 kHZ 的了。
+        sound = list(sf.read(wav_from))
+        sound[0] = librosa.resample(sound[0], sound[1], 16000)
+        sound[1] = 16000
+        sf.write(wav_to, sound[0], 16000)
     return 0
 
 def resample_to_16k(origin_wavpath, target_wavpath, num_workers=1):
