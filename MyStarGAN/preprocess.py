@@ -105,9 +105,9 @@ if __name__ == '__main__':
     # The original wav in VCTK is 48K, first we want to resample to 16K
     resample_to_16k(origin_wavpath, target_wavpath, num_workers=num_workers)
 
-    # WE only use 10 speakers listed below for this experiment.
-    speaker_used = ['262', '272', '229', '232', '292', '293', '360', '361', '248', '251']
-    speaker_used = ['p'+i for i in speaker_used]
+    ## WE only use 10 speakers listed below for this experiment.
+    # 最原始的音频文件应该放在 data/raw/wav48/xxx/yyy.wav，其中 xxx 是文件夹名，原来这下面提供的就是文件夹名。这里作为一个示例，随便取两个音频集 SF1，SM1 作为样例。
+    speaker_used = ['SF1', 'SM1']
 
     ## Next we are to extract the acoustic features (MCEPs, lf0) and compute the corresponding stats (means, stds). 
     # Make dirs to contain the MCEPs
