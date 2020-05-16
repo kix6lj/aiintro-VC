@@ -3,6 +3,7 @@ import argparse
 from solver import Solver
 from data_loader import get_loader, TestDataset
 from torch.backends import cudnn
+from os import sep
 
 
 def str2bool(v):
@@ -64,12 +65,12 @@ if __name__ == '__main__':
     parser.add_argument('--use_tensorboard', type=str2bool, default=True)
 
     # Directories.
-    parser.add_argument('--train_data_dir', type=str, default='./data/mc/train')
-    parser.add_argument('--test_data_dir', type=str, default='./data/mc/test')
-    parser.add_argument('--wav_dir', type=str, default="./data/VCTK-Corpus/wav16")
-    parser.add_argument('--log_dir', type=str, default='./logs')
-    parser.add_argument('--model_save_dir', type=str, default='./models')
-    parser.add_argument('--sample_dir', type=str, default='./samples')
+    parser.add_argument('--train_data_dir', type=str, default='./data/mc/train'.replace('/', sep))
+    parser.add_argument('--test_data_dir', type=str, default='./data/mc/test'.replace('/', sep))
+    parser.add_argument('--wav_dir', type=str, default="./data/VCTK-Corpus/wav16".replace('/', sep))
+    parser.add_argument('--log_dir', type=str, default='./logs'.replace('/', sep))
+    parser.add_argument('--model_save_dir', type=str, default='./models'.replace('/', sep))
+    parser.add_argument('--sample_dir', type=str, default='./samples'.replace('/'. sep))
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)
