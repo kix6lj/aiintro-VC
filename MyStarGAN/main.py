@@ -70,7 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('--wav_dir', type=str, default="./data/VCTK-Corpus/wav16".replace('/', sep))
     parser.add_argument('--log_dir', type=str, default='./logs'.replace('/', sep))
     parser.add_argument('--model_save_dir', type=str, default='./models'.replace('/', sep))
-    parser.add_argument('--sample_dir', type=str, default='./samples'.replace('/'. sep))
+    parser.add_argument('--sample_dir', type=str, default='./samples'.replace('/', sep))
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)
