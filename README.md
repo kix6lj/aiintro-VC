@@ -1,2 +1,3 @@
 # aiintro-VC
-Code of aiintro group project
+
+Code of aiintro group project.
