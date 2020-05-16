@@ -23,7 +23,7 @@ def resample(spk, origin_wavpath, target_wavpath):
         os.makedirs(folder_to, exist_ok=True)
         wav_to = join(folder_to, wav)
         wav_from = join(origin_wavpath, spk, wav)
-        # 这里修改成使用 librosa.resample；事实上原式音频也就不要求是 48 kHZ 的了。
+        # 这里修改成使用 librosa.resample；事实上原始音频也就不要求是 48 kHZ 的了。
         sound = list(sf.read(wav_from))
         sound[0] = librosa.resample(sound[0], sound[1], 16000)
         sound[1] = 16000
