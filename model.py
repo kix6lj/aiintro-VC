@@ -4,16 +4,39 @@ import torch.nn.functional as F
 import numpy as np
 # from data_loader import get_loader
 
+class GatedConv2d(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel_size, stride=1, padding=0, bias=True):
+        super(GatedConv2d, self).__init__()
+        self.c1 = nn.Conv2d(in_channel, out_channel, 
+                            kernel_size=kernel_size, 
+                            stride=stride, 
+                            padding=padding, 
+                            bias=bias)
+        self.n1 = nn.InstanceNorm2d(out_channel)
+        self.c2 = nn.Conv2d(in_channel, out_channel, 
+                            kernel_size=kernel_size, 
+                            stride=stride, 
+                            padding=padding, 
+                            bias=bias)
+        self.n2 = nn.InstanceNorm2d(out_channel)
+    def forward(self, x):
+        x1 = self.c1(x)
+        x1 = self.n1(x)
+        
+        x2 = self.c2(x)
+        x2 = self.n2(x)
+        x3 = x1 * torch.sigmoid(x2)
+        return x3
 
 class ResidualBlock(nn.Module):
     """Residual Block with instance normalization."""
     def __init__(self, dim_in, dim_out):
         super(ResidualBlock, self).__init__()
         self.main = nn.Sequential(
-            nn.Conv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+            GatedConv2d(dim_in, dim_out, kernel_size=3, stride=1, padding=1),
             nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            nn.Conv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1, bias=False),
+            GatedConv2d(dim_out, dim_out, kernel_size=3, stride=1, padding=1),
             nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True))
 
     def forward(self, x):
@@ -25,14 +48,14 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         c_dim = num_speakers
         layers = []
-        layers.append(nn.Conv2d(1+c_dim, conv_dim, kernel_size=(3, 9), padding=(1, 4), bias=False))
+        layers.append(GatedConv2d(1+c_dim, conv_dim, kernel_size=(3, 9), padding=(1, 4)))
         layers.append(nn.InstanceNorm2d(conv_dim, affine=True, track_running_stats=True))
         layers.append(nn.ReLU(inplace=True))
 
         # Down-sampling layers.
         curr_dim = conv_dim
         for i in range(2):
-            layers.append(nn.Conv2d(curr_dim, curr_dim*2, kernel_size=(4, 8), stride=(2, 2), padding=(1, 3), bias=False))
+            layers.append(GatedConv2d(curr_dim, curr_dim*2, kernel_size=(4, 8), stride=(2, 2), padding=(1, 3)))
             layers.append(nn.InstanceNorm2d(curr_dim*2, affine=True, track_running_stats=True))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim * 2
@@ -43,12 +66,12 @@ class Generator(nn.Module):
 
         # Up-sampling layers.
         for i in range(2):
-            layers.append(nn.ConvTranspose2d(curr_dim, curr_dim//2, kernel_size=4, stride=2, padding=1, bias=False))
+            layers.append(nn.ConvTranspose2d(curr_dim, curr_dim//2, kernel_size=4, stride=2, padding=1))
             layers.append(nn.InstanceNorm2d(curr_dim//2, affine=True, track_running_stats=True))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim // 2
 
-        layers.append(nn.Conv2d(curr_dim, 1, kernel_size=7, stride=1, padding=3, bias=False))
+        layers.append(GatedConv2d(curr_dim, 1, kernel_size=7, stride=1, padding=3))
         self.main = nn.Sequential(*layers)
 
     def forward(self, x, c):
@@ -63,20 +86,20 @@ class Discriminator(nn.Module):
     def __init__(self, input_size=(36, 256), conv_dim=64, repeat_num=5, num_speakers=10):
         super(Discriminator, self).__init__()
         layers = []
-        layers.append(nn.Conv2d(1, conv_dim, kernel_size=4, stride=2, padding=1))
+        layers.append(GatedConv2d(1, conv_dim, kernel_size=4, stride=2, padding=1))
         layers.append(nn.LeakyReLU(0.01))
 
         curr_dim = conv_dim
         for i in range(1, repeat_num):
-            layers.append(nn.Conv2d(curr_dim, curr_dim*2, kernel_size=4, stride=2, padding=1))
+            layers.append(GatedConv2d(curr_dim, curr_dim*2, kernel_size=4, stride=2, padding=1))
             layers.append(nn.LeakyReLU(0.01))
             curr_dim = curr_dim * 2
 
         kernel_size_0 = int(input_size[0] / np.power(2, repeat_num)) # 1
         kernel_size_1 = int(input_size[1] / np.power(2, repeat_num)) # 8
         self.main = nn.Sequential(*layers)
-        self.conv_dis = nn.Conv2d(curr_dim, 1, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0, bias=False) # padding should be 0
-        self.conv_clf_spks = nn.Conv2d(curr_dim, num_speakers, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0, bias=False)  # for num_speaker
+        self.conv_dis = GatedConv2d(curr_dim, 1, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0) # padding should be 0
+        self.conv_clf_spks = GatedConv2d(curr_dim, num_speakers, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0)  # for num_speaker
         
     def forward(self, x):
         h = self.main(x)
@@ -86,7 +109,8 @@ class Discriminator(nn.Module):
 
 if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    train_loader = get_loader('/scratch/sxliu/data_exp/VCTK-Corpus-22.05k/mc/train', 16, 'train', num_workers=1)
+    print(device)
+    #rain_loader = get_loader('/scratch/sxliu/data_exp/VCTK-Corpus-22.05k/mc/train', 16, 'train', num_workers=1)
     data_iter = iter(train_loader)
     G = Generator().to(device)
     D = Discriminator().to(device)
@@ -100,6 +124,3 @@ if __name__ == '__main__':
         mc_fake = G(mc_real, spk_acc_c_org)
         print(mc_fake.size())
         out_src, out_cls_spks, out_cls_emos = D(mc_fake)
-
-
-

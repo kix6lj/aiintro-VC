@@ -4,3 +4,5 @@ cremad/
 data/
 converted_samples/
 *.zip
+*.ipynb
+.ipynb_checkpoints/

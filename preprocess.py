@@ -14,6 +14,7 @@ from sklearn.model_selection import train_test_split
 import glob
 from os.path import join, basename
 import subprocess
+import soundfile as sf 
 
 def resample(spk, origin_wavpath, target_wavpath):
     wavfiles = [i for i in os.listdir(join(origin_wavpath, spk)) if i.endswith(".wav")]
@@ -22,7 +23,10 @@ def resample(spk, origin_wavpath, target_wavpath):
         os.makedirs(folder_to, exist_ok=True)
         wav_to = join(folder_to, wav)
         wav_from = join(origin_wavpath, spk, wav)
-        subprocess.call(['sox', wav_from, "-r", "16000", wav_to])
+        sound = list(sf.read(wav_from))
+        sound[0] = librosa.resample(sound[0], sound[1], 16000)
+        sound[1] = 16000
+        sf.write(wav_to, sound[0], 16000)
     return 0
 
 def resample_to_16k(origin_wavpath, target_wavpath, num_workers=1):
@@ -47,7 +51,6 @@ def split_data(paths):
 def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16000):
     paths = glob.glob(join(spk_fold_path, '*.wav'))
     spk_name = basename(spk_fold_path)
-    print(spk_fold_path)
     train_paths, test_paths = split_data(paths)
     f0s = []
     coded_sps = []
@@ -109,7 +112,9 @@ if __name__ == '__main__':
     # WE only use 10 speakers listed below for this experiment.
     #speaker_used = ['262', '272', '229', '232', '292', '293', '360', '361', '248', '251']
     #speaker_used = ['p'+i for i in speaker_used]
+    
     speaker_used = ['SF1', 'SF2', 'SF3', 'TF1', 'TF2', 'TM1', 'TM2', 'TM3']
+    speaker_used = speaker_used[0:2]
     ## Next we are to extract the acoustic features (MCEPs, lf0) and compute the corresponding stats (means, stds). 
     # Make dirs to contain the MCEPs
     os.makedirs(mc_dir_train, exist_ok=True)
