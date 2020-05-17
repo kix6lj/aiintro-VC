@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # StarGAN-Voice-Conversion
 This is a pytorch implementation of the paper: StarGAN-VC: Non-parallel many-to-many voice conversion with star generative adversarial networks  https://arxiv.org/abs/1806.02169 .
 Note that the model architecture is a little different from that of the original paper.
@@ -62,3 +63,8 @@ convert.py --resume_iters 200000 --src_spk p262 --trg_spk p272
 2. [Blow: a single-scale hyperconditioned flow for non-parallel raw-audio voice conversion (NeurIPS 2019)](https://arxiv.org/pdf/1906.00794.pdf)
 3. [ADAGAN: ADAPTIVE GAN FOR MANY-TO-MANY NON-PARALLEL VOICE CONVERSION (under review for ICLR 2020)](https://openreview.net/pdf?id=HJlk-eHFwH)
 
+=======
+# aiintro-VC
+
+Code of aiintro group project.
+>>>>>>> 0ff2d38e0a5a363351821de47e75f1587156a2e2
