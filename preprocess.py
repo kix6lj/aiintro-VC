@@ -113,8 +113,8 @@ if __name__ == '__main__':
     #speaker_used = ['262', '272', '229', '232', '292', '293', '360', '361', '248', '251']
     #speaker_used = ['p'+i for i in speaker_used]
     
-    speaker_used = ['SF1', 'SF2', 'SF3', 'TF1', 'TF2', 'TM1', 'TM2', 'TM3']
-    speaker_used = speaker_used[0:2]
+    speaker_used = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']###modified
+    #speaker_used = speaker_used[0:2]
     ## Next we are to extract the acoustic features (MCEPs, lf0) and compute the corresponding stats (means, stds). 
     # Make dirs to contain the MCEPs
     os.makedirs(mc_dir_train, exist_ok=True)
