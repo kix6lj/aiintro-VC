@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 __pycache__/*
 *.pyc
 cremad/
@@ -7,8 +6,7 @@ converted_samples/
 *.zip
 *.ipynb
 .ipynb_checkpoints/
-=======
 MyStarGAN/data
 MyStarGAN/__pycache__
 MyStarGAN/logs
->>>>>>> 0ff2d38e0a5a363351821de47e75f1587156a2e2
+.DS_Store
