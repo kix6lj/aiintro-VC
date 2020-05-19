@@ -54,9 +54,7 @@ def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16
     train_paths, test_paths = split_data(paths)
     f0s = []
     coded_sps = []
-    '''
     for wav_file in train_paths:
-        print(wav_file)
         f0, _, _, _, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
         f0s.append(f0)
         coded_sps.append(coded_sp)
@@ -68,12 +66,11 @@ def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16
             log_f0s_std=log_f0s_std,
             coded_sps_mean=coded_sps_mean,
             coded_sps_std=coded_sps_std)
-    '''
     
     f = np.load(join(mc_dir_train, spk_name+'_stats.npz'))
     log_f0s_mean, log_f0s_std = f['log_f0s_mean'], f['log_f0s_std']
     coded_sps_mean, coded_sps_std = f['coded_sps_mean'], f['coded_sps_std']
-    '''
+    
     for wav_file in tqdm(train_paths):
         wav_nam = basename(wav_file)
         f0, timeaxis, sp, ap, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
@@ -83,8 +80,7 @@ def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16
                 normed_coded_sp = normed_coded_sp, 
                 normed_cwt_lf0 = normed_cwt_lf0,
                 allow_pickle=False)
-    '''
-    print(len(test_paths))
+        
     for wav_file in tqdm(test_paths):
         wav_nam = basename(wav_file)
         f0, timeaxis, sp, ap, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
