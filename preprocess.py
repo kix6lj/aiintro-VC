@@ -54,10 +54,13 @@ def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16
     train_paths, test_paths = split_data(paths)
     f0s = []
     coded_sps = []
+    '''
     for wav_file in train_paths:
+        print(wav_file)
         f0, _, _, _, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
         f0s.append(f0)
         coded_sps.append(coded_sp)
+        
     log_f0s_mean, log_f0s_std = logf0_statistics(f0s)
     coded_sps_mean, coded_sps_std = coded_sp_statistics(coded_sps)
     np.savez(join(mc_dir_train, spk_name+'_stats.npz'), 
@@ -65,18 +68,32 @@ def get_spk_world_feats(spk_fold_path, mc_dir_train, mc_dir_test, sample_rate=16
             log_f0s_std=log_f0s_std,
             coded_sps_mean=coded_sps_mean,
             coded_sps_std=coded_sps_std)
+    '''
     
+    f = np.load(join(mc_dir_train, spk_name+'_stats.npz'))
+    log_f0s_mean, log_f0s_std = f['log_f0s_mean'], f['log_f0s_std']
+    coded_sps_mean, coded_sps_std = f['coded_sps_mean'], f['coded_sps_std']
+    '''
     for wav_file in tqdm(train_paths):
         wav_nam = basename(wav_file)
         f0, timeaxis, sp, ap, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
         normed_coded_sp = normalize_coded_sp(coded_sp, coded_sps_mean, coded_sps_std)
-        np.save(join(mc_dir_train, wav_nam.replace('.wav', '.npy')), normed_coded_sp, allow_pickle=False)
-    
+        normed_cwt_lf0 = normalize_cwt_lf0(f0, log_f0s_mean, log_f0s_std) # (len, dim)
+        np.savez(join(mc_dir_train, wav_nam.replace('.wav', '_f.npz')), 
+                normed_coded_sp = normed_coded_sp, 
+                normed_cwt_lf0 = normed_cwt_lf0,
+                allow_pickle=False)
+    '''
+    print(len(test_paths))
     for wav_file in tqdm(test_paths):
         wav_nam = basename(wav_file)
         f0, timeaxis, sp, ap, coded_sp = world_encode_wav(wav_file, fs=sample_rate)
         normed_coded_sp = normalize_coded_sp(coded_sp, coded_sps_mean, coded_sps_std)
-        np.save(join(mc_dir_test, wav_nam.replace('.wav', '.npy')), normed_coded_sp, allow_pickle=False)
+        normed_cwt_lf0 = normalize_cwt_lf0(f0, log_f0s_mean, log_f0s_std) #(len, dim)
+        np.savez(join(mc_dir_train, wav_nam.replace('.wav', '_f.npz')), 
+                normed_coded_sp = normed_coded_sp, 
+                normed_cwt_lf0 = normed_cwt_lf0,
+                allow_pickle=False)
     return 0
 
 
@@ -98,7 +115,7 @@ if __name__ == '__main__':
     parser.add_argument("--num_workers", type = int, default = None, help = "The number of cpus to use.")
 
     argv = parser.parse_args()
-
+    
     sample_rate = argv.sample_rate
     origin_wavpath = argv.origin_wavpath
     target_wavpath = argv.target_wavpath
@@ -113,8 +130,8 @@ if __name__ == '__main__':
     #speaker_used = ['262', '272', '229', '232', '292', '293', '360', '361', '248', '251']
     #speaker_used = ['p'+i for i in speaker_used]
     
-    speaker_used = ['SF1', 'SF2', 'SF3', 'TF1', 'TF2', 'TM1', 'TM2', 'TM3']
-    speaker_used = speaker_used[0:2]
+    # Clear mc dirs
+    speaker_used = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
     ## Next we are to extract the acoustic features (MCEPs, lf0) and compute the corresponding stats (means, stds). 
     # Make dirs to contain the MCEPs
     os.makedirs(mc_dir_train, exist_ok=True)

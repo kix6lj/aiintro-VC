@@ -44,6 +44,12 @@ def convert_continuos_f0(f0):
 
     return uv, cont_f0
 
+def get_cont_lf0(f0, frame_period=5.0):
+    uv, cont_f0_lpf = convert_continuos_f0(f0)
+    #cont_f0_lpf = low_pass_filter(cont_f0_lpf, int(1.0 / (frame_period * 0.001)), cutoff=20)
+    cont_lf0_lpf = np.log(cont_f0_lpf)
+    return uv, cont_lf0_lpf
+
 def get_lf0_cwt(lf0):
     '''
     input: 
@@ -57,10 +63,58 @@ def get_lf0_cwt(lf0):
     s0 = dt * 2
     J = 9
     
-    Wavelet_lf0, scales, freqs, coi, fft, fftfreqs = wavelet.cwt(np.squeeze(lf0), dt, dj, s0, J, mother)
+    Wavelet_lf0, scales, _, _, _, _ = wavelet.cwt(np.squeeze(lf0), dt, dj, s0, J, mother)
     # Wavelet.shape => (J + 1, len(lf0))
     Wavelet_lf0 = np.real(Wavelet_lf0).T
     return Wavelet_lf0, scales
+
+def norm_scale(Wavelet_lf0):
+    Wavelet_lf0_norm = np.zeros((Wavelet_lf0.shape[0], Wavelet_lf0.shape[1]))
+    mean = np.zeros((1,Wavelet_lf0.shape[1]))#[1,10]
+    std = np.zeros((1, Wavelet_lf0.shape[1]))
+    for scale in range(Wavelet_lf0.shape[1]):
+        mean[:,scale] = Wavelet_lf0[:,scale].mean()
+        std[:,scale] = Wavelet_lf0[:,scale].std()
+        Wavelet_lf0_norm[:,scale] = (Wavelet_lf0[:,scale]-mean[:,scale])/std[:,scale]
+    return Wavelet_lf0_norm, mean, std
+
+def normalize_cwt_lf0(f0, mean, std):
+    uv, cont_lf0_lpf = get_cont_lf0(f0)
+    cont_lf0_norm = (cont_lf0_lpf - mean) / std
+    Wavelet_lf0, scales = get_lf0_cwt(cont_lf0_norm)
+    Wavelet_lf0_norm, _, _ = norm_scale(Wavelet_lf0)
+    
+    return Wavelet_lf0_norm
+
+def get_lf0_cwt_norm(f0s, mean, std):
+
+    uvs = list()
+    cont_lf0_lpfs = list()
+    cont_lf0_lpf_norms = list()
+    Wavelet_lf0s = list()
+    Wavelet_lf0s_norm = list()
+    scaless = list()
+
+    means = list()
+    stds = list()
+    for f0 in f0s:
+
+        uv, cont_lf0_lpf = get_cont_lf0(f0)
+        cont_lf0_lpf_norm = (cont_lf0_lpf - mean) / std 
+
+        Wavelet_lf0, scales = get_lf0_cwt(cont_lf0_lpf_norm) #[560,10]
+        Wavelet_lf0_norm, mean_scale, std_scale = norm_scale(Wavelet_lf0) #[560,10],[1,10],[1,10]
+
+        Wavelet_lf0s_norm.append(Wavelet_lf0_norm)
+        uvs.append(uv)
+        cont_lf0_lpfs.append(cont_lf0_lpf)
+        cont_lf0_lpf_norms.append(cont_lf0_lpf_norm)
+        Wavelet_lf0s.append(Wavelet_lf0)
+        scaless.append(scales)
+        means.append(mean_scale)
+        stds.append(std_scale)
+
+    return Wavelet_lf0s_norm, scaless, means, stds
 
 def inverse_cwt(Wavelet_lf0, scales):
     '''
