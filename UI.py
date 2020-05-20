@@ -10,10 +10,11 @@ import numpy as np
 import platform
 import threading
 import concurrent.futures
+import change
 
 
 def detail_transform(wav, style):
-    return np.array(wav)
+    return change.Change(wav, style)
 
 
 def play(wav):
