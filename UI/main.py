@@ -25,6 +25,8 @@ class main_window(tk.Tk):
         plt.plot(np.arange(wav.shape[0]), wav)
         plt.title('origin wav')
         plt.xticks([])
+        maxabs = np.max(np.abs(wav)) * 1.2
+        plt.ylim([-maxabs, maxabs])
         plt.savefig('origin.png', dpi=100)
         self.image1 = tk.PhotoImage(file='origin.png')  # 需要对图片保持引用
         self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
@@ -51,6 +53,7 @@ class main_window(tk.Tk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
+        # (0, 0)
         self.canvas1 = tk.Canvas(self, width=480, height=320)
         self.canvas1.grid(row=0, column=0)
         plt.figure(figsize=(4.8, 3.2))
@@ -61,25 +64,27 @@ class main_window(tk.Tk):
         self.image1 = tk.PhotoImage(file='origin.png')  # 需要对图片保持引用
         self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
 
+        # (0, 1)
         self.frame1 = tk.Frame(self)
         self.frame1.grid(row=0, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
         self.frame1.grid_columnconfigure(0, weight=1)
         self.frame1.grid_rowconfigure(0, weight=1)
-        self.frame1.grid_rowconfigure(1, weight=1)
-        self.frame1.grid_rowconfigure(2, weight=1)
+        self.frame1 = tk.Frame(self.frame1)
+        self.frame1.grid(row=0, column=0)
 
         self.button1 = ttk.Button(
             self.frame1, text='打开', command=self.button1_on_click)
-        self.button1.grid(row=0, column=0, padx=8)
+        self.button1.pack(pady=8)
 
         self.button2 = ttk.Button(
             self.frame1, text='播放', command=self.button2_on_click)
-        self.button2.grid(row=1, column=0, padx=8)
+        self.button2.pack(pady=8)
 
         self.button3 = ttk.Button(
             self.frame1, text='转换', command=self.button3_on_click)
-        self.button3.grid(row=2, column=0, padx=8)
+        self.button3.pack(pady=8)
 
+        # (1, 0)
         self.canvas2 = tk.Canvas(self, width=480, height=320)
         self.canvas2.grid(row=1, column=0)
         plt.figure(figsize=(4.8, 3.2))
@@ -90,9 +95,19 @@ class main_window(tk.Tk):
         self.image2 = tk.PhotoImage(file='transformed.png')
         self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
 
-        self.list1 = tk.Listbox(self)
-        self.list1.grid(row=1, column=1, sticky=tk.W+tk.E,
-                        padx=32, pady=8)
+        # (1, 1)
+        self.frame2 = tk.Frame(self)
+        self.frame2.grid(row=1, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.frame2.grid_columnconfigure(0, weight=1)
+        self.frame2.grid_rowconfigure(0, weight=1)
+        self.frame2 = tk.Frame(self.frame2)
+        self.frame2.grid(row=0, column=1, padx=40, pady=8)
+
+        self.label1 = tk.Label(self.frame2, text="转换风格")
+        self.label1.pack()
+
+        self.list1 = tk.Listbox(self.frame2)
+        self.list1.pack()
 
     def init_instance(self):
         self.init_window()
