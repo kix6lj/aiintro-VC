@@ -9,10 +9,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import platform
 import threading
+import concurrent.futures
 
 
 def detail_transform(wav, style):
     return np.array(wav)
+
+
+def play(wav):
+    try:
+        sd.play(np.array(wav), 16000, blocking=True)
+    except:
+        pass
 
 
 class main_window(tk.Tk):
@@ -50,10 +58,7 @@ class main_window(tk.Tk):
         return True
 
     def button2_on_click(self):
-        try:
-            sd.play(np.array(self.wav), 16000)
-        except:
-            pass
+        self.thread_pool_sound.submit(play, self.wav)
 
     def button3_on_click(self):
         sel_style = self.listbox1.curselection()[0]
@@ -62,13 +67,10 @@ class main_window(tk.Tk):
         self.button3.config(state=tk.DISABLED)
         self.button4.config(state=tk.DISABLED)
         self.listbox1.config(state=tk.DISABLED)
-        threading.Thread(target=self.transform, args=[sel_style]).start()
+        self.thread_pool.submit(self.transform, sel_style)
 
     def button4_on_click(self):
-        try:
-            sd.play(np.array(self.transformed_wav), 16000)
-        except:
-            pass
+        self.thread_pool_sound.submit(play, self.transformed_wav)
 
     def transform(self, style):
         self.transformed_wav = wav = detail_transform(self.wav, style)
@@ -178,6 +180,13 @@ class main_window(tk.Tk):
     def declare_variable(self):
         self.wav = None  # 总是假定采样率为 16000 Hz
         self.styles = [f'风格 {i}' for i in range(6)]
+        self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.thread_pool_sound = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1)
+
+    def __del__(self):
+        self.thread_pool.shutdown()
+        self.thread_pool_sound.shutdown()
 
     def message_loop(self):
         return self.mainloop()
@@ -190,5 +199,6 @@ if __name__ == '__main__':
         scale = ctypes.windll.shcore.GetScaleFactorForDevice(0)
     else:
         scale = 100
+    mpl.use('agg')
     main = main_window()
     main.message_loop()
