@@ -16,11 +16,9 @@ class Converter():
         self.num_mceps = 36
         self.device = 'cpu'
         self.G = Generator(num_speakers=6)
-        self.Gf0 = Generatorf0(num_speakers=6, scale=10)
-        '''
+        self.Gf0 = Generatorf0(num_speakers=6, scale=10)d
         self.G.load_state_dict(torch.load(G_path, map_location=lambda storage, loc: storage))
         self.Gf0.load_state_dict(torch.load(Gf0_path, map_location=lambda storage, loc: storage))
-        '''
         self.stats_path = stats_path
         
         self.G.to(self.device)
