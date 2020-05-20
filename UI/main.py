@@ -1,36 +1,58 @@
-import tkinter
+import tkinter as tk
+import tkinter.ttk
 from tkinter import filedialog
 import soundfile as sf
 import sounddevice as sd
 import librosa
+import matplotlib.pyplot as plt
+import numpy as np
+import platform
 
 
-class main_window:
+class main_window(tk.Tk):
     def on_open(self):
-        path = filedialog.askopenfilename(parent=self.window,
+        path = filedialog.askopenfilename(parent=self,
                                           title='打开一个波形文件',
-                                          filetypes=[('波形文件（.wav）', '.wav')])
+                                          filetypes=[('波形文件', '.wav')])
         if not path:
             return False
 
         wav, samplerate = sf.read(path)
         self.wav = librosa.resample(wav, samplerate, 16000)
+
+        plt.figure(figsize=(4.8, 3.2))
+        plt.plot(np.arange(wav.shape[0]), wav)
+        plt.savefig('temp.png')
+        self.image1 = tk.PhotoImage(file='temp.png')  # 需要对图片保持引用
+        self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
         return True
 
     def init_window(self):
-        self.window = tkinter.Tk()
-        self.window.title('语音转换')
-        self.window.geometry('800x600')
+        tk.Tk.__init__(self)
+        self.tk.call('tk', 'scaling', scale / 75)
+        self.title('语音转换')
 
     def init_menu(self):
-        self.menu = tkinter.Menu(self.window)
-        self.window.config(menu=self.menu)
-        self.file_menu = tkinter.Menu(self.menu, tearoff=False)
+        self.menu = tk.Menu(self)
+        self.config(menu=self.menu)
+        self.file_menu = tk.Menu(self.menu, tearoff=False)
         self.menu.add_cascade(label='文件', menu=self.file_menu)
         self.file_menu.add_command(label='打开', command=self.on_open)
 
     def init_layout(self):
-        pass
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        self.canvas1 = tk.Canvas(self, width=480, height=320)
+        self.canvas1.grid(row=0, column=0)
+        self.canvas2 = tk.Canvas(self)
+        self.canvas2.grid(row=0, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.canvas2 = tk.Canvas(self)
+        self.canvas2.grid(row=1, column=0, sticky=tk.W+tk.E+tk.N+tk.S)
+        self.canvas2 = tk.Canvas(self)
+        self.canvas2.grid(row=1, column=1, sticky=tk.W+tk.E+tk.N+tk.S)
 
     def init_instance(self):
         self.init_window()
@@ -45,9 +67,15 @@ class main_window:
         self.wav = None  # 总是假定采样率为 16000 Hz
 
     def message_loop(self):
-        return self.window.mainloop()
+        return self.mainloop()
 
 
 if __name__ == '__main__':
+    if platform.system() == 'Windows':
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        scale = ctypes.windll.shcore.GetScaleFactorForDevice(0)
+    else:
+        scale = 100
     main = main_window()
     main.message_loop()
