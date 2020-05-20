@@ -35,10 +35,8 @@ class ResidualBlock(nn.Module):
         super(ResidualBlock, self).__init__()
         self.main = nn.Sequential(
             GatedConv2d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            GatedConv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.InstanceNorm2d(dim_out, affine=True, track_running_stats=True))
+            GatedConv2d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding))
 
     def forward(self, x):
         return x + self.main(x)
@@ -50,14 +48,12 @@ class Generator(nn.Module):
         c_dim = num_speakers
         layers = []
         layers.append(GatedConv2d(1+c_dim, conv_dim, kernel_size=(3, 9), padding=(1, 4)))
-        layers.append(nn.InstanceNorm2d(conv_dim, affine=True, track_running_stats=True))
         layers.append(nn.ReLU(inplace=True))
 
         # Down-sampling layers.
         curr_dim = conv_dim
         for i in range(2):
             layers.append(GatedConv2d(curr_dim, curr_dim*2, kernel_size=(4, 8), stride=(2, 2), padding=(1, 3)))
-            layers.append(nn.InstanceNorm2d(curr_dim*2, affine=True, track_running_stats=True))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim * 2
 
@@ -130,10 +126,8 @@ class ResidualBlock1d(nn.Module):
         super(ResidualBlock1d, self).__init__()
         self.main = nn.Sequential(
             GatedConv1d(dim_in, dim_out, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.InstanceNorm1d(dim_out, affine=True, track_running_stats=True),
             nn.ReLU(inplace=True),
-            GatedConv1d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding),
-            nn.InstanceNorm1d(dim_out, affine=True, track_running_stats=True))
+            GatedConv1d(dim_out, dim_out, kernel_size=kernel_size, stride=stride, padding=padding))
     
     def forward(self, x):
         return x + self.main(x)
@@ -144,14 +138,12 @@ class Generatorf0(nn.Module):
         c_dim = num_speakers
         layers = []
         layers.append(GatedConv1d(scale+c_dim, conv_dim, kernel_size=15, stride=1, padding=7))
-        layers.append(nn.InstanceNorm1d(conv_dim, affine=True, track_running_stats=True))
         layers.append(nn.ReLU(inplace=True))
 
         # Down-sampling layers.
         curr_dim = conv_dim
         for i in range(2):
             layers.append(GatedConv1d(curr_dim, curr_dim*2, kernel_size=4, stride=2, padding=1))
-            layers.append(nn.InstanceNorm1d(curr_dim*2, affine=True, track_running_stats=True))
             layers.append(nn.ReLU(inplace=True))
             curr_dim = curr_dim * 2
 
@@ -213,6 +205,7 @@ if __name__ == '__main__':
     D_mc = Discriminator().to(device)
     G_f0 = Generatorf0().to(device)
     D_f0 = Discriminatorf0().to(device)
+    
     for i in range(10):
         mc_real, lf0, spk_label_org, spk_acc_c_org = next(data_iter)
         mc_real.unsqueeze_(1) # (B, D, T) -> (B, 1, D, T) for conv2d

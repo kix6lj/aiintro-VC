@@ -8,6 +8,8 @@ converted_samples/
 *.ipynb
 .ipynb_checkpoints/
 logs/
+samples/
+trash/
 =======
 MyStarGAN/data
 MyStarGAN/__pycache__
