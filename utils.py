@@ -2,11 +2,134 @@ import librosa
 import numpy as np
 import os
 import pyworld
-
+from pycwt import wavelet
+import pywt
+from sklearn import preprocessing
+from scipy.interpolate import interp1d
+from scipy.signal import firwin, lfilter
 
 def load_wav(wav_file, sr):
     wav, _ = librosa.load(wav_file, sr=sr, mono=True)
     return wav
+
+def convert_continuos_f0(f0):
+    '''CONVERT F0 TO CONTINUOUS F0
+    Args:
+        f0 (ndarray): original f0 sequence with the shape (T)
+    Return:
+        (ndarray): continuous f0 with the shape (T)
+    '''
+    # get uv information as binary
+    uv = np.float32(f0 != 0)
+
+    # get start and end of f0
+    if (f0 == 0).all():
+        logging.warn("all of the f0 values are 0.")
+        return uv, f0
+    start_f0 = f0[f0 != 0][0]
+    end_f0 = f0[f0 != 0][-1]
+
+    # padding start and end of f0 sequence
+    start_idx = np.where(f0 == start_f0)[0][0]
+    end_idx = np.where(f0 == end_f0)[0][-1]
+    f0[:start_idx] = start_f0
+    f0[end_idx:] = end_f0
+
+    # get non-zero frame index
+    nz_frames = np.where(f0 != 0)[0]
+
+    # perform linear interpolation
+    f = interp1d(nz_frames, f0[nz_frames])
+    cont_f0 = f(np.arange(0, f0.shape[0]))
+
+    return uv, cont_f0
+
+def get_cont_lf0(f0, frame_period=5.0):
+    uv, cont_f0_lpf = convert_continuos_f0(f0)
+    #cont_f0_lpf = low_pass_filter(cont_f0_lpf, int(1.0 / (frame_period * 0.001)), cutoff=20)
+    cont_lf0_lpf = np.log(cont_f0_lpf)
+    return uv, cont_lf0_lpf
+
+def get_lf0_cwt(lf0):
+    '''
+    input: 
+        signal of shape (N)
+    output: 
+        Wavelet_lf0 of shape(10, N), scales of shape(10)
+    '''
+    mother = wavelet.MexicanHat()
+    dt = 0.005
+    dj = 1
+    s0 = dt * 2
+    J = 9
+    
+    Wavelet_lf0, scales, _, _, _, _ = wavelet.cwt(np.squeeze(lf0), dt, dj, s0, J, mother)
+    # Wavelet.shape => (J + 1, len(lf0))
+    Wavelet_lf0 = np.real(Wavelet_lf0).T
+    return Wavelet_lf0, scales
+
+def norm_scale(Wavelet_lf0):
+    Wavelet_lf0_norm = np.zeros((Wavelet_lf0.shape[0], Wavelet_lf0.shape[1]))
+    mean = np.zeros((1,Wavelet_lf0.shape[1]))#[1,10]
+    std = np.zeros((1, Wavelet_lf0.shape[1]))
+    for scale in range(Wavelet_lf0.shape[1]):
+        mean[:,scale] = Wavelet_lf0[:,scale].mean()
+        std[:,scale] = Wavelet_lf0[:,scale].std()
+        Wavelet_lf0_norm[:,scale] = (Wavelet_lf0[:,scale]-mean[:,scale])/std[:,scale]
+    return Wavelet_lf0_norm, mean, std
+
+def normalize_cwt_lf0(f0, mean, std):
+    uv, cont_lf0_lpf = get_cont_lf0(f0)
+    cont_lf0_norm = (cont_lf0_lpf - mean) / std
+    Wavelet_lf0, scales = get_lf0_cwt(cont_lf0_norm)
+    Wavelet_lf0_norm, _, _ = norm_scale(Wavelet_lf0)
+    
+    return Wavelet_lf0_norm
+
+def get_lf0_cwt_norm(f0s, mean, std):
+
+    uvs = list()
+    cont_lf0_lpfs = list()
+    cont_lf0_lpf_norms = list()
+    Wavelet_lf0s = list()
+    Wavelet_lf0s_norm = list()
+    scaless = list()
+
+    means = list()
+    stds = list()
+    for f0 in f0s:
+
+        uv, cont_lf0_lpf = get_cont_lf0(f0)
+        cont_lf0_lpf_norm = (cont_lf0_lpf - mean) / std 
+
+        Wavelet_lf0, scales = get_lf0_cwt(cont_lf0_lpf_norm) #[560,10]
+        Wavelet_lf0_norm, mean_scale, std_scale = norm_scale(Wavelet_lf0) #[560,10],[1,10],[1,10]
+
+        Wavelet_lf0s_norm.append(Wavelet_lf0_norm)
+        uvs.append(uv)
+        cont_lf0_lpfs.append(cont_lf0_lpf)
+        cont_lf0_lpf_norms.append(cont_lf0_lpf_norm)
+        Wavelet_lf0s.append(Wavelet_lf0)
+        scaless.append(scales)
+        means.append(mean_scale)
+        stds.append(std_scale)
+
+    return Wavelet_lf0s_norm, scaless, means, stds
+
+def inverse_cwt(Wavelet_lf0, scales):
+    '''
+    Recovering signal
+    input: 
+        Wavelet_lf0 of shape(N, J + 1), scales of shape(J + 1)
+    output:
+        signal of shape(N)
+    '''
+    lf0_rec = np.zeros([Wavelet_lf0.shape[0], len(scales)])
+    for i in range(0, len(scales)):
+        lf0_rec[:,i] = Wavelet_lf0[:,i] * ((i+1+2.5)**(-2.5))
+    lf0_rec_sum = np.sum(lf0_rec, axis = 1)
+    lf0_rec_sum = preprocessing.scale(lf0_rec_sum)
+    return lf0_rec_sum
 
 def world_decompose(wav, fs, frame_period = 5.0):
     # Decompose speech signal into f0, spectral envelope and aperiodicity using WORLD

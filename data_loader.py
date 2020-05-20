@@ -19,7 +19,9 @@ spk2acc = {'262': 'Edinburgh', #F
            '251': 'India'} #M
 min_length = 256   # Since we slice 256 frames from each utterance when training.
 # Build a dict useful when we want to get one-hot representation of speakers.
-speakers = ['p262', 'p272', 'p229', 'p232', 'p292', 'p293', 'p360', 'p361', 'p248', 'p251']
+#speakers = ['p262', 'p272', 'p229', 'p232', 'p292', 'p293', 'p360', 'p361', 'p248', 'p251']
+speakers = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
+
 spk2idx = dict(zip(speakers, range(len(speakers))))
 
 def to_categorical(y, num_classes=None):
@@ -49,26 +51,27 @@ def to_categorical(y, num_classes=None):
     return categorical
 
 class MyDataset(data.Dataset):
-    """Dataset for MCEP features and speaker labels."""
+    """Dataset for MCEP, cwt_lf0 features and speaker labels."""
     def __init__(self, data_dir):
-        mc_files = glob.glob(join(data_dir, '*.npy'))
-        mc_files = [i for i in mc_files if basename(i)[:4] in speakers] 
-        self.mc_files = self.rm_too_short_utt(mc_files)
-        self.num_files = len(self.mc_files)
+        data_files = glob.glob(join(data_dir, '*_f.npz'))
+        data_files = [i for i in data_files if basename(i)[9:12] in speakers] 
+        self.data_files = self.rm_too_short_utt(data_files)
+        self.num_files = len(self.data_files)
         print("\t Number of training samples: ", self.num_files)
-        for f in self.mc_files:
-            mc = np.load(f)
-            if mc.shape[0] <= min_length:
+        for f in self.data_files:
+            data = np.load(f)
+            if data['normed_coded_sp'].shape[0] <= min_length:
                 print(f)
                 raise RuntimeError(f"The data may be corrupted! We need all MCEP features having more than {min_length} frames!") 
 
-    def rm_too_short_utt(self, mc_files, min_length=min_length):
-        new_mc_files = []
-        for mcfile in mc_files:
-            mc = np.load(mcfile)
+    def rm_too_short_utt(self, data_files, min_length=min_length):
+        new_data_files = []
+        for datafile in data_files:
+            data = np.load(datafile)
+            mc = data['normed_coded_sp']
             if mc.shape[0] > min_length:
-                new_mc_files.append(mcfile)
-        return new_mc_files
+                new_data_files.append(datafile)
+        return new_data_files
 
     def sample_seg(self, feat, sample_len=min_length):
         assert feat.shape[0] - sample_len >= 0
@@ -79,16 +82,18 @@ class MyDataset(data.Dataset):
         return self.num_files
 
     def __getitem__(self, index):
-        filename = self.mc_files[index]
-        spk = basename(filename).split('_')[0]
+        filename = self.data_files[index]
+        spk = basename(filename).split('_')[2]
         spk_idx = spk2idx[spk]
-        mc = np.load(filename)
-        mc = self.sample_seg(mc)
+        data = np.load(filename)
+        mc = self.sample_seg(data['normed_coded_sp'])
+        lf0 = self.sample_seg(data['normed_cwt_lf0'])
         mc = np.transpose(mc, (1, 0))  # (T, D) -> (D, T), since pytorch need feature having shape
+        lf0 = np.transpose(lf0, (1, 0))
         # to one-hot
         spk_cat = np.squeeze(to_categorical([spk_idx], num_classes=len(speakers)))
 
-        return torch.FloatTensor(mc), torch.LongTensor([spk_idx]).squeeze_(), torch.FloatTensor(spk_cat)
+        return torch.FloatTensor(mc), torch.FloatTensor(lf0), torch.LongTensor([spk_idx]).squeeze_(), torch.FloatTensor(spk_cat)
         
 
 class TestDataset(object):
@@ -137,19 +142,12 @@ if __name__ == '__main__':
     loader = get_loader('./data/mc/train')
     data_iter = iter(loader)
     for i in range(10):
-        mc, spk_idx, acc_idx, spk_acc_cat = next(data_iter)
+        mc, lf0, spk_idx, spk_acc_cat = next(data_iter)
         print('-'*50)
         print(mc.size())
+        print(lf0.size())
         print(spk_idx.size())
-        print(acc_idx.size())
         print(spk_acc_cat.size())
         print(spk_idx.squeeze_())
         print(spk_acc_cat)
         print('-'*50)
-
-
-
-
-
-
-

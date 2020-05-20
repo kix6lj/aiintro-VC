@@ -6,6 +6,7 @@ converted_samples/
 *.zip
 *.ipynb
 .ipynb_checkpoints/
+logs/
 MyStarGAN/data
 MyStarGAN/__pycache__
 MyStarGAN/logs
