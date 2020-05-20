@@ -14,7 +14,7 @@ import change
 
 
 def detail_transform(wav, style):
-    return change.Change(wav, style)
+    return change.Change(wav, style) # TODO: 修复多线程出错时不能正确处理异常的问题。
 
 
 def play(wav):
