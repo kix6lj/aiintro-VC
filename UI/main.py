@@ -43,6 +43,7 @@ class main_window(tk.Tk):
         tk.Tk.__init__(self)
         self.tk.call('tk', 'scaling', scale / 75)
         self.title('语音转换')
+        self.resizable(0, 0)
 
     def init_layout(self):
         self.grid_columnconfigure(0, weight=0)
