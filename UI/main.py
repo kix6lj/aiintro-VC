@@ -1,5 +1,5 @@
 import tkinter as tk
-import tkinter.ttk
+import tkinter.ttk as ttk
 from tkinter import filedialog
 import soundfile as sf
 import sounddevice as sd
@@ -69,7 +69,7 @@ class main_window(tk.Tk):
         self.frame1.grid_columnconfigure(0, weight=1)
         self.frame1.grid_rowconfigure(0, weight=1)
 
-        self.button1 = tk.Button(
+        self.button1 = ttk.Button(
             self.frame1, text='播放', command=self.button1_on_click)
         self.button1.grid(row=0, column=0, padx=8, ipadx=8)
 
