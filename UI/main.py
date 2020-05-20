@@ -39,7 +39,8 @@ class main_window(tk.Tk):
             pass
 
     def button3_on_click(self):
-        pass
+        sel_style = self.listbox1.curselection()[0]
+        print(sel_style)
 
     def init_window(self):
         tk.Tk.__init__(self)
@@ -106,19 +107,25 @@ class main_window(tk.Tk):
         self.label1 = tk.Label(self.frame2, text="转换风格")
         self.label1.pack()
 
-        self.list1 = tk.Listbox(self.frame2)
-        self.list1.pack()
+        self.listbox1 = tk.Listbox(self.frame2, selectmode=tk.SINGLE)
+        self.listbox1.pack()
+        for item in self.styles:
+            self.listbox1.insert(tk.END, item)
+        self.listbox1.selection_set(0)
+        self.listbox1.bind("<Double-Button-1>",
+                           lambda _: main.button3_on_click())
 
     def init_instance(self):
         self.init_window()
         self.init_layout()
 
     def __init__(self):
-        self.init_instance()
         self.declare_variable()
+        self.init_instance()
 
     def declare_variable(self):
         self.wav = None  # 总是假定采样率为 16000 Hz
+        self.styles = [f'风格 {i}' for i in range(6)]
 
     def message_loop(self):
         return self.mainloop()
