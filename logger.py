@@ -1,6 +1,6 @@
 # import tensorflow as tf
-from tensorboardX import SummaryWriter
-
+# from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 # class Logger(object):
 #     """Tensorflow Tensorboard logger."""
 

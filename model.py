@@ -19,6 +19,7 @@ class GatedConv2d(nn.Module):
                             padding=padding, 
                             bias=bias)
         self.n2 = nn.InstanceNorm2d(out_channel)
+        
     def forward(self, x):
         x1 = self.c1(x)
         x1 = self.n1(x1)
@@ -98,8 +99,9 @@ class Discriminator(nn.Module):
         kernel_size_0 = int(input_size[0] / np.power(2, repeat_num)) # 1
         kernel_size_1 = int(input_size[1] / np.power(2, repeat_num)) # 8
         self.main = nn.Sequential(*layers)
-        self.conv_dis = GatedConv2d(curr_dim, 1, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0) # padding should be 0
-        self.conv_clf_spks = GatedConv2d(curr_dim, num_speakers, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0)  # for num_speaker
+        #self.conv_dis = GatedConv2d(curr_dim, 1, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0) # padding should be 0, don't use InstanceNorm
+        self.conv_dis = nn.Conv2d(curr_dim, 1, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0) # padding should be 0
+        self.conv_clf_spks = nn.Conv2d(curr_dim, num_speakers, kernel_size=(kernel_size_0, kernel_size_1), stride=1, padding=0)  # for num_speaker
         
     def forward(self, x):
         h = self.main(x)
@@ -192,8 +194,8 @@ class Discriminatorf0(nn.Module):
         # kernel_size_0 = int(input_size[0] / np.power(2, repeat_num)) # 1
         # kernel_size_1 = int(input_size[1] / np.power(2, repeat_num)) # 8
         self.main = nn.Sequential(*layers)
-        self.conv_dis = GatedConv1d(curr_dim, 1, kernel_size=kernel_size, stride=1, padding=0) # padding should be 0
-        self.conv_clf_spks = GatedConv1d(curr_dim, num_speakers, kernel_size=kernel_size, stride=1, padding=0)  # for num_speaker
+        self.conv_dis = nn.Conv1d(curr_dim, 1, kernel_size=kernel_size, stride=1, padding=0) # padding should be 0
+        self.conv_clf_spks = nn.Conv1d(curr_dim, num_speakers, kernel_size=kernel_size, stride=1, padding=0)  # for num_speaker
         
     def forward(self, x):
         h = self.main(x)
