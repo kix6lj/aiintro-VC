@@ -8,6 +8,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import platform
+import threading
+
+
+def detail_transform(wav, style):
+    return np.array(wav)
 
 
 class main_window(tk.Tk):
@@ -19,7 +24,8 @@ class main_window(tk.Tk):
             return False
 
         wav, samplerate = sf.read(path)
-        self.wav = librosa.resample(wav, samplerate, 16000)
+        self.wav = wav = librosa.resample(wav, samplerate, 16000)
+        self.transformed_wav = None
 
         plt.figure(figsize=(4.8, 3.2))
         plt.plot(np.arange(wav.shape[0]), wav)
@@ -28,19 +34,59 @@ class main_window(tk.Tk):
         maxabs = np.max(np.abs(wav)) * 1.2
         plt.ylim([-maxabs, maxabs])
         plt.savefig('origin.png', dpi=100)
+        plt.close()
         self.image1 = tk.PhotoImage(file='origin.png')  # 需要对图片保持引用
         self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
+
+        plt.figure(figsize=(4.8, 3.2))
+        plt.title('transformed wav')
+        plt.xticks([])
+        plt.yticks([])
+        plt.savefig('transformed.png', dpi=100)
+        plt.close()
+        self.image2 = tk.PhotoImage(file='transformed.png')
+        self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+        self.button2_on_click()
         return True
 
     def button2_on_click(self):
         try:
-            sd.play(self.wav, 16000)
+            sd.play(np.array(self.wav), 16000)
         except:
             pass
 
     def button3_on_click(self):
         sel_style = self.listbox1.curselection()[0]
-        print(sel_style)
+        if self.wav is None:
+            return
+        self.button3.config(state=tk.DISABLED)
+        self.button4.config(state=tk.DISABLED)
+        self.listbox1.config(state=tk.DISABLED)
+        threading.Thread(target=self.transform, args=[sel_style]).start()
+
+    def button4_on_click(self):
+        try:
+            sd.play(np.array(self.transformed_wav), 16000)
+        except:
+            pass
+
+    def transform(self, style):
+        self.transformed_wav = wav = detail_transform(self.wav, style)
+        plt.figure(figsize=(4.8, 3.2))
+        plt.plot(np.arange(wav.shape[0]), wav)
+        plt.title('transformed wav')
+        plt.xticks([])
+        maxabs = np.max(np.abs(wav)) * 1.2
+        plt.ylim([-maxabs, maxabs])
+        plt.savefig('transformed.png', dpi=100)
+        plt.close()
+        self.image2 = tk.PhotoImage(file='transformed.png')
+        self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+
+        self.button3.config(state=tk.NORMAL)
+        self.button4.config(state=tk.NORMAL)
+        self.listbox1.config(state=tk.NORMAL)
+        self.button4_on_click()
 
     def init_window(self):
         tk.Tk.__init__(self)
@@ -62,7 +108,8 @@ class main_window(tk.Tk):
         plt.xticks([])
         plt.yticks([])
         plt.savefig('origin.png', dpi=100)
-        self.image1 = tk.PhotoImage(file='origin.png')  # 需要对图片保持引用
+        plt.close()
+        self.image1 = tk.PhotoImage(file='origin.png')
         self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
 
         # (0, 1)
@@ -85,6 +132,10 @@ class main_window(tk.Tk):
             self.frame1, text='转换', command=self.button3_on_click)
         self.button3.pack(pady=8)
 
+        self.button4 = ttk.Button(
+            self.frame1, text='播放结果', command=self.button4_on_click)
+        self.button4.pack(pady=8)
+
         # (1, 0)
         self.canvas2 = tk.Canvas(self, width=480, height=320)
         self.canvas2.grid(row=1, column=0)
@@ -93,6 +144,7 @@ class main_window(tk.Tk):
         plt.xticks([])
         plt.yticks([])
         plt.savefig('transformed.png', dpi=100)
+        plt.close()
         self.image2 = tk.PhotoImage(file='transformed.png')
         self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
 
