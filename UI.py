@@ -42,6 +42,7 @@ class main_window(tk.Tk):
         wav, samplerate = sf.read(path)
         self.wav = wav = normalize(librosa.resample(wav, samplerate, 16000))
         self.transformed_wav = None
+        sf.write('origin.wav', wav, 16000)
 
         plt.figure(figsize=(4.8, 3.2))
         plt.plot(np.arange(wav.shape[0]), wav)
@@ -88,22 +89,23 @@ class main_window(tk.Tk):
             self.button3.config(state=tk.NORMAL)
             self.button4.config(state=tk.NORMAL)
             self.listbox1.config(state=tk.NORMAL)
-            return
-        plt.figure(figsize=(4.8, 3.2))
-        plt.plot(np.arange(wav.shape[0]), wav)
-        plt.title('transformed wav')
-        plt.xticks([])
-        maxabs = np.max(np.abs(wav)) * 1.2
-        plt.ylim([-maxabs, maxabs])
-        plt.savefig('transformed.png', dpi=100)
-        plt.close()
-        self.image2 = tk.PhotoImage(file='transformed.png')
-        self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+        else:
+            sf.write('transformed.wav', wav, 16000)
+            plt.figure(figsize=(4.8, 3.2))
+            plt.plot(np.arange(wav.shape[0]), wav)
+            plt.title('transformed wav')
+            plt.xticks([])
+            maxabs = np.max(np.abs(wav)) * 1.2
+            plt.ylim([-maxabs, maxabs])
+            plt.savefig('transformed.png', dpi=100)
+            plt.close()
+            self.image2 = tk.PhotoImage(file='transformed.png')
+            self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+            self.button4_on_click()
 
         self.button3.config(state=tk.NORMAL)
         self.button4.config(state=tk.NORMAL)
         self.listbox1.config(state=tk.NORMAL)
-        self.button4_on_click()
 
     def init_window(self):
         tk.Tk.__init__(self)
