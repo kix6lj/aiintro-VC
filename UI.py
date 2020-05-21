@@ -13,9 +13,11 @@ import threading
 import concurrent.futures
 import change
 
+speakers = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
+
 
 def detail_transform(wav, style):
-    return change.Change(wav, style)
+    return normalize(change.Change(wav, speakers[style]))
 
 
 def play(wav):
@@ -23,6 +25,10 @@ def play(wav):
         sd.play(np.array(wav), 16000, blocking=True)
     except:
         pass
+
+
+def normalize(wav):
+    return wav / np.max(np.abs(wav))
 
 
 class main_window(tk.Tk):
@@ -34,7 +40,7 @@ class main_window(tk.Tk):
             return False
 
         wav, samplerate = sf.read(path)
-        self.wav = wav = librosa.resample(wav, samplerate, 16000)
+        self.wav = wav = normalize(librosa.resample(wav, samplerate, 16000))
         self.transformed_wav = None
 
         plt.figure(figsize=(4.8, 3.2))
@@ -188,7 +194,7 @@ class main_window(tk.Tk):
 
     def declare_variable(self):
         self.wav = None  # 总是假定采样率为 16000 Hz
-        self.styles = [f'风格 {i}' for i in range(6)]
+        self.styles = [f'风格 {speakers[i]}' for i in range(6)]
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.thread_pool_sound = concurrent.futures.ThreadPoolExecutor(
             max_workers=1)
