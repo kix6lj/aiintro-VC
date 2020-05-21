@@ -1,6 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
+from tkinter import messagebox
 import soundfile as sf
 import sounddevice as sd
 import librosa
@@ -14,7 +15,7 @@ import change
 
 
 def detail_transform(wav, style):
-    return change.Change(wav, style) # TODO: 修复多线程出错时不能正确处理异常的问题。
+    return change.Change(wav, style)
 
 
 def play(wav):
@@ -74,7 +75,14 @@ class main_window(tk.Tk):
         self.thread_pool_sound.submit(play, self.transformed_wav)
 
     def transform(self, style):
-        self.transformed_wav = wav = detail_transform(self.wav, style)
+        try:
+            self.transformed_wav = wav = detail_transform(self.wav, style)
+        except:
+            messagebox.showerror(title='', message='出现错误，请重试。')
+            self.button3.config(state=tk.NORMAL)
+            self.button4.config(state=tk.NORMAL)
+            self.listbox1.config(state=tk.NORMAL)
+            return
         plt.figure(figsize=(4.8, 3.2))
         plt.plot(np.arange(wav.shape[0]), wav)
         plt.title('transformed wav')
