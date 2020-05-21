@@ -1,6 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
+from tkinter import messagebox
 import soundfile as sf
 import sounddevice as sd
 import librosa
@@ -10,10 +11,13 @@ import numpy as np
 import platform
 import threading
 import concurrent.futures
+import change
+
+speakers = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
 
 
 def detail_transform(wav, style):
-    return np.array(wav)
+    return normalize(change.Change(wav, speakers[style]))
 
 
 def play(wav):
@@ -21,6 +25,10 @@ def play(wav):
         sd.play(np.array(wav), 16000, blocking=True)
     except:
         pass
+
+
+def normalize(wav):
+    return wav / np.max(np.abs(wav))
 
 
 class main_window(tk.Tk):
@@ -32,7 +40,7 @@ class main_window(tk.Tk):
             return False
 
         wav, samplerate = sf.read(path)
-        self.wav = wav = librosa.resample(wav, samplerate, 16000)
+        self.wav = wav = normalize(librosa.resample(wav, samplerate, 16000))
         self.transformed_wav = None
 
         plt.figure(figsize=(4.8, 3.2))
@@ -73,7 +81,14 @@ class main_window(tk.Tk):
         self.thread_pool_sound.submit(play, self.transformed_wav)
 
     def transform(self, style):
-        self.transformed_wav = wav = detail_transform(self.wav, style)
+        try:
+            self.transformed_wav = wav = detail_transform(self.wav, style)
+        except Exception as err:
+            messagebox.showerror(title='', message=f'出现错误，请重试。错误信息：{err}')
+            self.button3.config(state=tk.NORMAL)
+            self.button4.config(state=tk.NORMAL)
+            self.listbox1.config(state=tk.NORMAL)
+            return
         plt.figure(figsize=(4.8, 3.2))
         plt.plot(np.arange(wav.shape[0]), wav)
         plt.title('transformed wav')
@@ -179,7 +194,7 @@ class main_window(tk.Tk):
 
     def declare_variable(self):
         self.wav = None  # 总是假定采样率为 16000 Hz
-        self.styles = [f'风格 {i}' for i in range(6)]
+        self.styles = [f'风格 {speakers[i]}' for i in range(6)]
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.thread_pool_sound = concurrent.futures.ThreadPoolExecutor(
             max_workers=1)
