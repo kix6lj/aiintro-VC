@@ -131,6 +131,12 @@ def inverse_cwt(Wavelet_lf0, scales):
     lf0_rec_sum = preprocessing.scale(lf0_rec_sum)
     return lf0_rec_sum
 
+def denormalize(Wavelet_lf0_norm, mean, std):
+    Wavelet_lf0_denorm = np.zeros((Wavelet_lf0_norm.shape[0], Wavelet_lf0_norm.shape[1]))
+    for scale in range(Wavelet_lf0_norm.shape[1]):
+        Wavelet_lf0_denorm[:,scale] = Wavelet_lf0_norm[:,scale]*std[:,scale]+mean[:,scale]
+    return Wavelet_lf0_denorm
+
 def world_decompose(wav, fs, frame_period = 5.0):
     # Decompose speech signal into f0, spectral envelope and aperiodicity using WORLD
     wav = wav.astype(np.float64)

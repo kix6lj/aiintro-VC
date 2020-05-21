@@ -17,10 +17,8 @@ class Converter():
         self.device = 'cpu'
         self.G = Generator(num_speakers=6)
         self.Gf0 = Generatorf0(num_speakers=6, scale=10)
-        '''
         self.G.load_state_dict(torch.load(G_path, map_location=lambda storage, loc: storage))
         self.Gf0.load_state_dict(torch.load(Gf0_path, map_location=lambda storage, loc: storage))
-        '''
         self.stats_path = stats_path
         
         self.G.to(self.device)
@@ -70,7 +68,6 @@ class Converter():
         input_cat.unsqueeze_(0)
         
         # feed into model
-        print(input_sp.size())
         coded_sp_converted_norm = self.G(input_sp, input_cat).data.cpu().numpy()
         lf0 = self.Gf0(input_lf0, input_cat).data.cpu().numpy()
         coded_sp_converted_norm, lf0 = np.squeeze(coded_sp_converted_norm, axis=(0, 1)), np.squeeze(lf0, axis=(0))
