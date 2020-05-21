@@ -77,8 +77,8 @@ class main_window(tk.Tk):
     def transform(self, style):
         try:
             self.transformed_wav = wav = detail_transform(self.wav, style)
-        except:
-            messagebox.showerror(title='', message='出现错误，请重试。')
+        except Exception as err:
+            messagebox.showerror(title='', message=f'出现错误，请重试。错误信息：{err}')
             self.button3.config(state=tk.NORMAL)
             self.button4.config(state=tk.NORMAL)
             self.listbox1.config(state=tk.NORMAL)
