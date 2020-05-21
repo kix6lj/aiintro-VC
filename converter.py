@@ -78,7 +78,7 @@ class Converter():
         lf0_cwt_denormalize = denormalize(lf0.T, mean, std)
         lf0_rec = inverse_cwt(lf0_cwt_denormalize, scales)
         lf0_converted = lf0_rec * log_f0s_std_trg + log_f0s_mean_trg
-        f0_converted = np.squeeze(uv) * np.exp(lf0_converted)
+        f0_converted = np.squeeze(uv)[:lf0_converted.shape[0]] * np.exp(lf0_converted)
         f0_converted = np.ascontiguousarray(f0_converted)
         
         coded_sp_converted = coded_sp_converted.T
