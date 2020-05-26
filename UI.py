@@ -13,6 +13,8 @@ import threading
 import concurrent.futures
 import change
 import utils
+import pyaudio
+import wave
 
 speakers = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
 
@@ -23,9 +25,25 @@ def detail_transform(wav, style):
 
 def play(wav):
     try:
-        sd.play(np.array(wav), 16000, blocking=True)
-    except:
-        pass
+        CHUNK = 1024
+        wf = wave.open(wav, 'rb')
+        p = pyaudio.PyAudio()
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+        data = wf.readframes(CHUNK)
+        datas = []
+        while len(data) > 0:
+            data = wf.readframes(CHUNK)
+            datas.append(data)
+        for d in datas:
+            stream.write(d)
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+    except Exception as e:
+        print(e)
 
 
 def normalize(wav):
@@ -81,7 +99,7 @@ class main_window(tk.Tk):
         return True
 
     def button2_on_click(self):
-        self.thread_pool_sound.submit(play, self.wav)
+        self.thread_pool_sound.submit(play, 'origin.wav')
 
     def button3_on_click(self):
         sel_style = self.listbox1.curselection()[0]
@@ -93,7 +111,7 @@ class main_window(tk.Tk):
         self.thread_pool.submit(self.transform, sel_style)
 
     def button4_on_click(self):
-        self.thread_pool_sound.submit(play, self.transformed_wav)
+        self.thread_pool_sound.submit(play, 'transformed.wav')
 
     def transform(self, style):
         try:
