@@ -12,6 +12,9 @@ import platform
 import threading
 import concurrent.futures
 import change
+import utils
+import pyaudio
+import wave
 
 speakers = ['ANG', 'DIS', 'FEA', 'HAP', 'NEU', 'SAD']
 
@@ -22,9 +25,25 @@ def detail_transform(wav, style):
 
 def play(wav):
     try:
-        sd.play(np.array(wav), 16000, blocking=True)
-    except:
-        pass
+        CHUNK = 1024
+        wf = wave.open(wav, 'rb')
+        p = pyaudio.PyAudio()
+        stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+        data = wf.readframes(CHUNK)
+        datas = []
+        while len(data) > 0:
+            data = wf.readframes(CHUNK)
+            datas.append(data)
+        for d in datas:
+            stream.write(d)
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
+    except Exception as e:
+        print(e)
 
 
 def normalize(wav):
@@ -42,22 +61,36 @@ class main_window(tk.Tk):
         wav, samplerate = sf.read(path)
         self.wav = wav = normalize(librosa.resample(wav, samplerate, 16000))
         self.transformed_wav = None
+        sf.write('origin.wav', wav, 16000)
 
-        plt.figure(figsize=(4.8, 3.2))
-        plt.plot(np.arange(wav.shape[0]), wav)
-        plt.title('origin wav')
-        plt.xticks([])
+        fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.2))
+        ax = axes.ravel()
+        ax[0].plot(np.arange(wav.shape[0]), wav)
+        ax[0].set_aspect('auto')
+        ax[0].set_title('original wav')
+        ax[0].set_xticks([])
         maxabs = np.max(np.abs(wav)) * 1.2
-        plt.ylim([-maxabs, maxabs])
+        ax[0].set_ylim([-maxabs, maxabs])
+        MFCC = librosa.feature.mfcc(wav, 16000, n_mfcc=36)
+        ax[1].imshow(MFCC)
+        ax[1].set_aspect('auto')
+        ax[1].set_title('original MFCC')
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
+        ax[1].set_xlabel('frame')
         plt.savefig('origin.png', dpi=100)
         plt.close()
         self.image1 = tk.PhotoImage(file='origin.png')  # 需要对图片保持引用
         self.canvas1.create_image(0, 0, anchor='nw', image=self.image1)
 
-        plt.figure(figsize=(4.8, 3.2))
-        plt.title('transformed wav')
-        plt.xticks([])
-        plt.yticks([])
+        fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.2))
+        ax = axes.ravel()
+        ax[0].set_title('transformed wav')
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+        ax[1].set_title('transformed MFCC')
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
         plt.savefig('transformed.png', dpi=100)
         plt.close()
         self.image2 = tk.PhotoImage(file='transformed.png')
@@ -66,7 +99,7 @@ class main_window(tk.Tk):
         return True
 
     def button2_on_click(self):
-        self.thread_pool_sound.submit(play, self.wav)
+        self.thread_pool_sound.submit(play, 'origin.wav')
 
     def button3_on_click(self):
         sel_style = self.listbox1.curselection()[0]
@@ -78,7 +111,7 @@ class main_window(tk.Tk):
         self.thread_pool.submit(self.transform, sel_style)
 
     def button4_on_click(self):
-        self.thread_pool_sound.submit(play, self.transformed_wav)
+        self.thread_pool_sound.submit(play, 'transformed.wav')
 
     def transform(self, style):
         try:
@@ -88,22 +121,32 @@ class main_window(tk.Tk):
             self.button3.config(state=tk.NORMAL)
             self.button4.config(state=tk.NORMAL)
             self.listbox1.config(state=tk.NORMAL)
-            return
-        plt.figure(figsize=(4.8, 3.2))
-        plt.plot(np.arange(wav.shape[0]), wav)
-        plt.title('transformed wav')
-        plt.xticks([])
-        maxabs = np.max(np.abs(wav)) * 1.2
-        plt.ylim([-maxabs, maxabs])
-        plt.savefig('transformed.png', dpi=100)
-        plt.close()
-        self.image2 = tk.PhotoImage(file='transformed.png')
-        self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+        else:
+            sf.write('transformed.wav', wav, 16000)
+            fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.2))
+            ax = axes.ravel()
+            ax[0].plot(np.arange(wav.shape[0]), wav)
+            ax[0].set_aspect('auto')
+            ax[0].set_title('transformed wav')
+            ax[0].set_xticks([])
+            maxabs = np.max(np.abs(wav)) * 1.2
+            ax[0].set_ylim([-maxabs, maxabs])
+            MFCC = librosa.feature.mfcc(wav, 16000, n_mfcc=36)
+            ax[1].imshow(MFCC)
+            ax[1].set_aspect('auto')
+            ax[1].set_title('transformed MFCC')
+            ax[1].set_xticks([])
+            ax[1].set_yticks([])
+            ax[1].set_xlabel('frame')
+            plt.savefig('transformed.png', dpi=100)
+            plt.close()
+            self.image2 = tk.PhotoImage(file='transformed.png')
+            self.canvas2.create_image(0, 0, anchor='nw', image=self.image2)
+            self.button4_on_click()
 
         self.button3.config(state=tk.NORMAL)
         self.button4.config(state=tk.NORMAL)
         self.listbox1.config(state=tk.NORMAL)
-        self.button4_on_click()
 
     def init_window(self):
         tk.Tk.__init__(self)
@@ -118,12 +161,16 @@ class main_window(tk.Tk):
         self.grid_rowconfigure(1, weight=1)
 
         # (0, 0)
-        self.canvas1 = tk.Canvas(self, width=480, height=320)
+        self.canvas1 = tk.Canvas(self, width=960, height=320)
         self.canvas1.grid(row=0, column=0)
-        plt.figure(figsize=(4.8, 3.2))
-        plt.title('origin wav')
-        plt.xticks([])
-        plt.yticks([])
+        fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.2))
+        ax = axes.ravel()
+        ax[0].set_title('original wav')
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+        ax[1].set_title('original MFCC')
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
         plt.savefig('origin.png', dpi=100)
         plt.close()
         self.image1 = tk.PhotoImage(file='origin.png')
@@ -154,12 +201,16 @@ class main_window(tk.Tk):
         self.button4.pack(pady=8)
 
         # (1, 0)
-        self.canvas2 = tk.Canvas(self, width=480, height=320)
+        self.canvas2 = tk.Canvas(self, width=960, height=320)
         self.canvas2.grid(row=1, column=0)
-        plt.figure(figsize=(4.8, 3.2))
-        plt.title('transformed wav')
-        plt.xticks([])
-        plt.yticks([])
+        fig, axes = plt.subplots(1, 2, figsize=(9.6, 3.2))
+        ax = axes.ravel()
+        ax[0].set_title('transformed wav')
+        ax[0].set_xticks([])
+        ax[0].set_yticks([])
+        ax[1].set_title('transformed MFCC')
+        ax[1].set_xticks([])
+        ax[1].set_yticks([])
         plt.savefig('transformed.png', dpi=100)
         plt.close()
         self.image2 = tk.PhotoImage(file='transformed.png')
